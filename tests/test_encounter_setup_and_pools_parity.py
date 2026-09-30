@@ -130,7 +130,7 @@ RUBY_RAIDER_TOUGH_HP_RANGES = {
     "TRACKER_RUBY_RAIDER": (22, 26),
 }
 BYGONE_EFFIGY_TOUGH_HP = 132
-BYRDONIS_TOUGH_HP = 99
+BYRDONIS_TOUGH_HP = 90
 PHROG_PARASITE_TOUGH_MIN_HP = 66
 PHROG_PARASITE_TOUGH_MAX_HP = 68
 VANTOM_TOUGH_HP = 183
@@ -1016,7 +1016,7 @@ class TestAllEncountersSetup:
 
     @pytest.mark.parametrize("act_name, encounters", ALL_ENCOUNTERS_BY_ACT)
     def test_hp_values_within_bounds(self, act_name, encounters):
-        """All monster HP values should be between 1 and 500."""
+        """All monster HP values should be between 1 and 600."""
         for seed in range(10):
             rng = Rng(seed)
             for encounter in encounters:

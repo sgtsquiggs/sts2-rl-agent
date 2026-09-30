@@ -49,7 +49,7 @@ def setup_devoted_sculptor_weak(combat: CombatState, rng: Rng) -> None:
 def setup_scrolls_of_biting_weak(combat: CombatState, rng: Rng) -> None:
     starter_move_idx = rng.next_int(0, 2)
     for offset in range(3):
-        creature, ai = create_scroll_of_biting(rng, (starter_move_idx + offset) % 3)
+        creature, ai = create_scroll_of_biting(rng, (starter_move_idx + offset) % 3, ascension_level=getattr(combat, "ascension_level", 0))
         combat.add_enemy(creature, ai)
 
 
@@ -109,9 +109,9 @@ def setup_owl_magistrate_normal(combat: CombatState, rng: Rng) -> None:
 def setup_scrolls_of_biting_normal(combat: CombatState, rng: Rng) -> None:
     starter_move_idx = rng.next_int(0, 2)
     for offset in range(3):
-        creature, ai = create_scroll_of_biting(rng, (starter_move_idx + offset) % 3)
+        creature, ai = create_scroll_of_biting(rng, (starter_move_idx + offset) % 3, ascension_level=getattr(combat, "ascension_level", 0))
         combat.add_enemy(creature, ai)
-    creature, ai = create_scroll_of_biting(rng, 2)
+    creature, ai = create_scroll_of_biting(rng, 2, ascension_level=getattr(combat, "ascension_level", 0))
     combat.add_enemy(creature, ai)
 
 
