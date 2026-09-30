@@ -76,7 +76,7 @@ class TestRelicUncommonOwnerScopeAndRoomHooksParity:
         assert player.current_hp == 43
 
     def test_planisphere_heals_when_last_map_point_was_unknown(self):
-        """Matches Planisphere.cs: heal when entering from an Unknown map node."""
+        """Matches Planisphere.cs (v0.111.0): heal 5 when entering from an Unknown map node."""
         run_state = RunState(seed=1202, character_id="Ironclad")
         run_state.player.current_hp = 35
         assert run_state.player.obtain_relic("PLANISPHERE")
@@ -89,7 +89,7 @@ class TestRelicUncommonOwnerScopeAndRoomHooksParity:
         run_state.add_visited_coord(unknown.coord)
 
         relic.after_room_entered(run_state.player, RoomVisitContext(RoomType.MONSTER))
-        assert run_state.player.current_hp == 39
+        assert run_state.player.current_hp == 40
 
     def test_planisphere_does_not_heal_on_non_unknown_or_when_owner_dead(self):
         """Planisphere should not heal for known nodes and should never revive a dead owner."""

@@ -622,7 +622,7 @@ def test_treasure_cursed_pearl_auto_adds_greed_reward_and_gold_before_returning_
     assert any(card.card_id.name == "GREED" for card in mgr.run_state.player.deck)
 
 
-def test_treasure_distinguished_cape_auto_adds_apparitions_and_reduces_max_hp():
+def test_treasure_distinguished_cape_auto_adds_curses_and_apparitions_without_hp_loss():
     mgr = RunManager(seed=827, character_id="Ironclad")
     starting_deck = len(mgr.run_state.player.deck)
     starting_max_hp = mgr.run_state.player.max_hp
@@ -637,9 +637,10 @@ def test_treasure_distinguished_cape_auto_adds_apparitions_and_reduces_max_hp():
 
     assert result["phase"] == RunManager.PHASE_MAP_CHOICE
     assert mgr.run_state.pending_choice is None
-    assert mgr.run_state.player.max_hp == starting_max_hp - 9
-    assert len(mgr.run_state.player.deck) == starting_deck + 3
+    assert mgr.run_state.player.max_hp == starting_max_hp
+    assert len(mgr.run_state.player.deck) == starting_deck + 5
     assert sum(1 for card in mgr.run_state.player.deck if card.card_id.name == "APPARITION") == 3
+    assert sum(1 for card in mgr.run_state.player.deck if card.card_type == CardType.CURSE) == 2
 
 
 def test_treasure_pandoras_box_transforms_all_basic_strike_defends_without_choice():

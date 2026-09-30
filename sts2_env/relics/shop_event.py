@@ -1622,51 +1622,43 @@ class DelicateFrond(RelicInstance):
 
 @register_relic
 class DiamondDiadem(RelicInstance):
-    """If <= 2 cards played this turn, gain stacking buff."""
+    """Turn 1: gain 20 unpowered Block and apply 1 Blur."""
     relic_id = RelicId.DIAMOND_DIADEM
     rarity = RelicRarity.ANCIENT
     pool = RelicPool.EVENT
-    CARD_THRESHOLD = 2
-
-    def __init__(self, relic_id: RelicId):
-        super().__init__(relic_id)
-        self._cards_this_turn: int = 0
-
-    def after_card_played(self, owner: Creature, card: object, combat: CombatState) -> None:
-        if getattr(card, "owner", None) is owner:
-            self._cards_this_turn += 1
-
-    def before_turn_end(self, owner: Creature, side: CombatSide, combat: CombatState) -> None:
-        if side == CombatSide.PLAYER and self._cards_this_turn <= self.CARD_THRESHOLD:
-            owner.apply_power(PowerId.DIAMOND_DIADEM, 1)
+    BLOCK = 20
+    BLUR = 1
 
     def after_side_turn_start(self, owner: Creature, side: CombatSide, combat: CombatState) -> None:
-        if side == CombatSide.PLAYER:
-            self._cards_this_turn = 0
-
-    def after_combat_end(self, owner: Creature, combat: CombatState) -> None:
-        self._cards_this_turn = 0
+        if side == CombatSide.PLAYER and combat.round_number == 1:
+            _gain_unpowered_block(owner, self.BLOCK, combat)
+            owner.apply_power(PowerId.BLUR, self.BLUR)
 
 
 @register_relic
 class DistinguishedCape(RelicInstance):
-    """Lose 9 max HP, add 3 Apparition cards."""
+    """Add 2 random curses and 3 Apparition cards."""
     relic_id = RelicId.DISTINGUISHED_CAPE
     rarity = RelicRarity.ANCIENT
     pool = RelicPool.EVENT
     has_upon_pickup_effect = True
-    HP_LOSS = 9
+    CURSES = 2
     CARDS = 3
 
     def after_obtained(self, owner: Creature) -> None:
-        owner.lose_max_hp(self.HP_LOSS)
         if getattr(owner.run_state, "defer_followup_rewards", False):
-            from sts2_env.cards.factory import create_card
+            from sts2_env.cards.factory import create_card, eligible_registered_cards
 
-            card_id = owner._coerce_card_id("Apparition")
-            if card_id is not None:
-                owner.offer_add_cards_reward([create_card(card_id) for _ in range(self.CARDS)])
+            curse_ids = eligible_registered_cards(card_pool=CardPoolId.CURSE, generation_context="modifier")
+            chosen_curses = owner.run_state.rng.niche.sample(curse_ids, min(self.CURSES, len(curse_ids)))
+            generated = [create_card(card_id) for card_id in chosen_curses]
+            apparition_id = owner._coerce_card_id("Apparition")
+            if apparition_id is not None:
+                generated.extend(create_card(apparition_id) for _ in range(self.CARDS))
+            if generated:
+                owner.offer_add_cards_reward(generated)
                 return
+        owner.add_random_curses(self.CURSES, rng=owner.run_state.rng.niche)
         for _ in range(self.CARDS):
             owner.add_card_to_deck("Apparition")
 
@@ -2336,6 +2328,9 @@ class JeweledMask(RelicInstance):
         candidates = [card for card in state.draw if card.card_type == CardType.POWER]
         if not candidates:
             return
+        non_innate = [card for card in candidates if not card.is_innate]
+        if non_innate:
+            candidates = non_innate
         selected = combat.combat_card_selection_rng.choice(candidates)
         selected.set_temporary_free_this_turn()
         combat.move_card_to_creature_hand(owner, selected)
@@ -3059,13 +3054,13 @@ class Pomander(RelicInstance):
 
 @register_relic
 class PrecariousShears(RelicInstance):
-    """Remove 2 cards, take 13 damage."""
+    """Remove 2 cards, take 16 damage."""
     relic_id = RelicId.PRECARIOUS_SHEARS
     rarity = RelicRarity.ANCIENT
     pool = RelicPool.EVENT
     has_upon_pickup_effect = True
     CARDS = 2
-    DAMAGE = 13
+    DAMAGE = 16
 
     def after_obtained(self, owner: Creature) -> None:
         candidates = owner.removable_deck_cards()
@@ -3275,7 +3270,7 @@ class SandCastle(RelicInstance):
 
 @register_relic
 class ScrollBoxes(RelicInstance):
-    """Lose all gold, choose from 2 bundles of cards."""
+    """Choose from 2 bundles of cards."""
     relic_id = RelicId.SCROLL_BOXES
     rarity = RelicRarity.ANCIENT
     pool = RelicPool.EVENT
@@ -3294,7 +3289,6 @@ class ScrollBoxes(RelicInstance):
         )
 
     def after_obtained(self, owner: Creature) -> None:
-        owner.lose_all_gold()
         owner.offer_card_bundles()
 
 
@@ -3377,31 +3371,23 @@ class SealOfGold(RelicInstance):
 
 @register_relic
 class SereTalon(RelicInstance):
-    """Add 2 random curses and 3 Wish cards."""
+    """Lose 9 max HP, add 3 Wish cards."""
     relic_id = RelicId.SERE_TALON
     rarity = RelicRarity.ANCIENT
     pool = RelicPool.EVENT
     has_upon_pickup_effect = True
-    CURSES = 2
+    HP_LOSS = 9
     WISHES = 3
 
     def after_obtained(self, owner: Creature) -> None:
+        owner.lose_max_hp(self.HP_LOSS)
         if getattr(owner.run_state, "defer_followup_rewards", False):
-            from sts2_env.cards.factory import create_card, eligible_registered_cards
+            from sts2_env.cards.factory import create_card
 
-            curse_ids = eligible_registered_cards(card_pool=CardPoolId.CURSE, generation_context="modifier")
-            chosen_curses = owner.run_state.rng.niche.sample(curse_ids, min(self.CURSES, len(curse_ids)))
-            generated = [
-                create_card(card_id)
-                for card_id in chosen_curses
-            ]
             wish_id = owner._coerce_card_id("Wish")
             if wish_id is not None:
-                generated.extend(create_card(wish_id) for _ in range(self.WISHES))
-            if generated:
-                owner.offer_add_cards_reward(generated)
+                owner.offer_add_cards_reward([create_card(wish_id) for _ in range(self.WISHES)])
                 return
-        owner.add_random_curses(self.CURSES, rng=owner.run_state.rng.niche)
         for _ in range(self.WISHES):
             owner.add_card_to_deck("Wish")
 

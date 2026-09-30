@@ -87,17 +87,17 @@ class TestRelicStarterCommonOpeningTurnHooksParity:
         assert len(combat.orb_queue.orbs) == 3
 
     def test_permafrost_triggers_block_once_for_first_power_each_combat(self):
-        """Matches Permafrost.cs: first Power card in combat grants 6 block once."""
+        """Matches Permafrost.cs: first Power card in combat grants 7 block once."""
         combat = _make_ironclad_combat(["Permafrost"], seed=303)
         combat.hand = [make_inflame(), make_inflame()]
         combat.energy = 2
 
         assert combat.player.block == 0
         assert combat.play_card(0)
-        assert combat.player.block == 6
+        assert combat.player.block == 7
 
         assert combat.play_card(0)
-        assert combat.player.block == 6
+        assert combat.player.block == 7
 
     def test_permafrost_block_triggers_after_block_gained_hooks(self):
         combat = _make_ironclad_combat(["Permafrost"], seed=306)
@@ -109,7 +109,7 @@ class TestRelicStarterCommonOpeningTurnHooksParity:
 
         assert combat.play_card(0)
 
-        assert combat.player.block == 6
+        assert combat.player.block == 7
         assert enemy.current_hp == start_hp - 5
 
     def test_red_skull_applies_and_removes_strength_when_crossing_hp_threshold(self):

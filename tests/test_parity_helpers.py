@@ -1161,7 +1161,7 @@ class TestUntargetableReviveStates:
         combat.add_enemy(giant, giant_ai)
         combat.start_combat()
 
-        assert giant.max_hp == 250
+        assert giant.max_hp == 240  # v0.111.0: 240 base (WaterfallGiant.cs)
         giant_ai.current_move.perform(combat)
         giant_ai.on_move_performed()
         giant_ai.roll_move(combat.rng)
