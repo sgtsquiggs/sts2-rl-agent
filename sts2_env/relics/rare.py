@@ -1172,6 +1172,13 @@ class UnsettlingLamp(RelicInstance):
             PowerId.TEMPORARY_DEXTERITY: PowerId.DEXTERITY,
             PowerId.TEMPORARY_FOCUS: PowerId.FOCUS,
             PowerId.TEMPORARY_STRENGTH: PowerId.STRENGTH,
+            # C# HasDoubledTemporaryPowerSource covers every ITemporaryPower; the debuff ones the player gives enemies
+            # (TemporaryStrengthPower subclasses) were missing, so Crush Under+ through the lamp gave -8 Strength, not -4.
+            PowerId.CRUSH_UNDER: PowerId.STRENGTH,
+            PowerId.DARK_SHACKLES: PowerId.STRENGTH,
+            PowerId.DYING_STAR: PowerId.STRENGTH,
+            PowerId.ENFEEBLING_TOUCH: PowerId.STRENGTH,
+            PowerId.MANGLE: PowerId.STRENGTH,
         }
         internal_power_id = temporary_internal_power_ids.get(power_id)
         if internal_power_id is not None:

@@ -22,6 +22,7 @@ from sts2_env.core.enums import (
     PowerId,
     PowerType,
     PowerStackType,
+    TargetType,
     ValueProp,
 )
 from sts2_env.powers.base import PowerInstance
@@ -1071,6 +1072,11 @@ class BurrowedPower(PowerInstance):
 # ---------------------------------------------------------------------------
 # SurroundedPower
 # ---------------------------------------------------------------------------
+# C# SurroundedPower.BeforeCardPlayed turns toward cardPlay.Target; a RandomEnemy card is played untargeted. False
+# restores the old turn toward the sim's up-front random pick (kept so callers can compare the two).
+SURROUNDED_IGNORES_RANDOM_TARGET = True
+
+
 class SurroundedPower(PowerInstance):
     """Player takes 50% more damage from attacks from behind (based on
     facing direction and BackAttack powers on enemies).
@@ -1128,6 +1134,15 @@ class SurroundedPower(PowerInstance):
         self, owner: Creature, card: object, combat: CombatState
     ) -> None:
         if getattr(card, "owner", None) is not owner:
+            return
+        # C#: BeforeCardPlayed turns toward cardPlay.Target, which a RandomEnemy card never has (it is played
+        # untargeted; its hits pick random opponents). The sim resolves a random play target up front, so ignore it.
+        target_type_for = getattr(card, "target_type_for", None)
+        if (
+            SURROUNDED_IGNORES_RANDOM_TARGET
+            and target_type_for is not None
+            and target_type_for(owner) == TargetType.RANDOM_ENEMY
+        ):
             return
         self._update_facing_toward_target(getattr(combat, "active_card_target", None) or getattr(card, "target", None))
 
