@@ -334,7 +334,7 @@ class TestSilentCardEffectsReferenceParity:
 
         assert card.cost == 2
         assert combat.play_card(0, 0)
-        assert enemy.current_hp == 100 - before_draws - 2
+        assert enemy.current_hp == 100 - (1 + before_draws + 2)  # CalculatedVar: base 1 + extra 1 * drawn
 
     def test_upgraded_hidden_daggers_creates_upgraded_shivs(self):
         combat = _make_combat()

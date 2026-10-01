@@ -824,7 +824,7 @@ def murder(card: CardInstance, combat: CombatState, target: Creature | None) -> 
     owner = _owner(card, combat)
     base = card.effect_vars.get("calc_base", 1)
     extra = card.effect_vars.get("extra_damage", 1)
-    total_dmg = base * extra * combat.count_cards_drawn_this_combat(owner)
+    total_dmg = base + extra * combat.count_cards_drawn_this_combat(owner)  # CalculatedVar: base + extra * n
     dmg = calculate_damage(total_dmg, owner, target, ValueProp.MOVE, combat)
     apply_damage(target, dmg, ValueProp.MOVE, combat, owner)
 
