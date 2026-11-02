@@ -1075,13 +1075,16 @@ class StockPower(PowerInstance):
 # ---------------------------------------------------------------------------
 class StranglePower(PowerInstance):
     """Each card played deals Amount unblockable+unpowered damage to the
-    owner. Removed at end of any turn.
+    owner (an enemy). Removed at the end of the owner's side turn.
 
     C# ref: StranglePower.cs
-    - BeforeCardPlayed: record Amount for the card.
-    - AfterCardPlayed: deal recorded damage to owner.
-    - AfterTurnEnd: remove.
-    StackType.Counter.
+    - BeforeCardPlayed: record Amount for the card (only cards owned by the
+      applier's player; single player, every played card qualifies, and a
+      wire-loaded power has no applier, so the check is not modelled).
+    - AfterCardPlayed: deal recorded damage to owner (no dealer).
+    - AfterSideTurnEnd: remove when the ending side's participants contain
+      the owner, i.e. at the end of the enemy turn, not the player's.
+    StackType.Counter, InstancedPerApplier (one instance in single player).
     """
 
     power_type = PowerType.DEBUFF
@@ -1106,7 +1109,9 @@ class StranglePower(PowerInstance):
         )
 
     def after_turn_end(self, owner: Creature, side: CombatSide, combat: CombatState) -> None:
-        self.amount = 0
+        # Amount 0 makes fire_after_turn_end remove the power.
+        if side == owner.side:
+            self.amount = 0
 
 
 # ---------------------------------------------------------------------------

@@ -34,6 +34,7 @@ from sts2_env.cards.silent import (
     make_shadowmeld,
     make_skewer,
     make_slice,
+    make_strangle,
     make_suppress,
     make_sucker_punch,
     make_defend_silent,
@@ -873,3 +874,50 @@ class TestSilentCardEffectsReferenceParity:
         assert combat.can_play_card(zero) is True
         assert combat.play_card(0, 0)
         assert enemy.current_hp == hp_before
+
+    def test_strangle_applies_strangle_power_not_constrict(self):
+        for upgraded, hit, amount in ((False, 8, 2), (True, 10, 3)):
+            combat = _make_combat()
+            enemy = combat.enemies[0]
+            enemy.max_hp = 100
+            enemy.current_hp = 100
+            combat.hand = [make_strangle(upgraded=upgraded)]
+            combat.energy = 1
+
+            assert combat.play_card(0, 0)
+            # Applied during OnPlay, after BeforeCardPlayed: no trigger on its own play.
+            assert enemy.current_hp == 100 - hit
+            assert enemy.get_power_amount(PowerId.STRANGLE) == amount
+            assert enemy.get_power_amount(PowerId.CONSTRICT) == 0
+
+    def test_strangle_damages_enemy_per_card_and_stacks_after_the_play(self):
+        combat = _make_combat()
+        enemy = combat.enemies[0]
+        enemy.max_hp = 100
+        enemy.current_hp = 100
+        combat.hand = [make_strangle(), make_strangle(), make_defend_silent()]
+        combat.energy = 3
+
+        assert combat.play_card(0, 0)
+        assert enemy.current_hp == 92
+        # The second Strangle triggers at the amount held when it was played (2), then stacks to 4.
+        assert combat.play_card(0, 0)
+        assert enemy.current_hp == 92 - 8 - 2
+        assert enemy.get_power_amount(PowerId.STRANGLE) == 4
+        assert combat.play_card(0)
+        assert enemy.current_hp == 82 - 4
+
+    def test_strangle_is_removed_at_the_owner_side_turn_end(self):
+        combat = _make_combat()
+        enemy = combat.enemies[0]
+        enemy.max_hp = 100
+        enemy.current_hp = 100
+        combat.hand = [make_strangle()]
+        combat.energy = 1
+        assert combat.play_card(0, 0)
+
+        # C# AfterSideTurnEnd removes only when the participants contain the owner (the enemy side).
+        fire_after_turn_end(CombatSide.PLAYER, combat)
+        assert enemy.get_power_amount(PowerId.STRANGLE) == 2
+        fire_after_turn_end(CombatSide.ENEMY, combat)
+        assert PowerId.STRANGLE not in enemy.powers

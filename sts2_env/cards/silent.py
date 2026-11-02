@@ -665,7 +665,9 @@ def strangle(card: CardInstance, combat: CombatState, target: Creature | None) -
     owner = _owner(card, combat)
     dmg = calculate_damage(card.base_damage, owner, target, ValueProp.MOVE, combat)
     apply_damage(target, dmg, ValueProp.MOVE, combat, owner)
-    combat.apply_power_to(target, PowerId.CONSTRICT, card.effect_vars.get("strangle_power", 2))
+    # C# Strangle.OnPlay: PowerCmd.Apply<StranglePower>(target, StranglePower var, applier: owner). Applied after
+    # this card's BeforeCardPlayed, so Strangle never triggers on its own play.
+    combat.apply_power_to(target, PowerId.STRANGLE, card.effect_vars.get("strangle_power", 2), applier=owner)
 
 
 @register_effect(CardId.TACTICIAN)
