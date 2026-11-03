@@ -6,7 +6,7 @@ Pain and Parasite are legacy explicit-construction cards and are not in STS2 car
 
 from __future__ import annotations
 
-from sts2_env.cards.base import CardInstance, _get_next_id, increase_base_damage, new_card_instance_id
+from sts2_env.cards.base import CardInstance, _get_next_id, ensure_instance_id, increase_base_damage, new_card_instance_id
 from sts2_env.cards.factory import create_character_cards
 from sts2_env.cards.registry import (
     register_after_combat_end_hook,
@@ -1892,8 +1892,8 @@ def _make_new_reference_card(card_id: CardId, upgraded: bool) -> CardInstance:
 
 
 def make_dowsing(upgraded: bool = False) -> CardInstance:
-    return _make_new_reference_card(CardId.DOWSING, upgraded)
+    return ensure_instance_id(_make_new_reference_card(CardId.DOWSING, upgraded))  # R181: called directly
 
 
 def make_wither(upgraded: bool = False) -> CardInstance:
-    return _make_new_reference_card(CardId.WITHER, upgraded)
+    return ensure_instance_id(_make_new_reference_card(CardId.WITHER, upgraded))  # R181: called directly

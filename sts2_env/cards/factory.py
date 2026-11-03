@@ -493,11 +493,13 @@ def create_card(card_id: CardId, upgraded: bool = False) -> CardInstance:
     registry = _factory_registry()
     entry = registry.get(card_id)
     if entry is None:
-        return create_reference_card(card_id, upgraded=upgraded, allow_generation=False)
+        return card_base.ensure_instance_id(
+            create_reference_card(card_id, upgraded=upgraded, allow_generation=False)
+        )
     factory, supports_upgraded, _ = entry
 
     if supports_upgraded:
-        return _apply_decompiled_static_metadata(factory(upgraded=upgraded))
+        return card_base.ensure_instance_id(_apply_decompiled_static_metadata(factory(upgraded=upgraded)))
     card = factory()
     if upgraded:
         definition = _reference_definition(card_id)
@@ -508,7 +510,7 @@ def create_card(card_id: CardId, upgraded: bool = False) -> CardInstance:
         }:
             card.upgraded = True
             _apply_upgrade_text(card, card.effect_vars, definition.upgrade_text)
-    return _apply_decompiled_static_metadata(card)
+    return card_base.ensure_instance_id(_apply_decompiled_static_metadata(card))
 
 
 @lru_cache(maxsize=None)

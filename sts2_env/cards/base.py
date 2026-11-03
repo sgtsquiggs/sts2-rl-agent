@@ -548,3 +548,18 @@ def new_card_instance_id_after(cards: Iterable[object]) -> int:
 def reset_instance_counter() -> None:
     global _next_instance_id
     _next_instance_id = 0
+
+
+# Card identities (sts2-autoplay R181). A make_* factory that passes no instance_id leaves the card at id 0, so equal
+# copies alias: `card in pile`, `pile.remove(card)` and `pile.index(card)` (CardInstance is a dataclass) take the first
+# equal id-0 copy, and id-keyed lookups collapse every id-0 card into one entry. The game gives each card its own
+# identity. On, create_card and the status factories the sim calls directly give a card that comes back with id 0 a
+# fresh id (new_card_instance_id). Off (the default here), cards are made as before.
+GEN_UNIQUE_IDS = False
+
+
+def ensure_instance_id(card):
+    """Give `card` a fresh instance id if it has none and GEN_UNIQUE_IDS is on; return it."""
+    if GEN_UNIQUE_IDS and card.instance_id == 0:
+        card.instance_id = _get_next_id()
+    return card
