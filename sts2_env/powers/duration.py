@@ -78,7 +78,9 @@ class PlatingPower(PowerInstance):
     C# hooks:
       BeforeSideTurnStart: Enemy Plating grants block on round 1 (side==PLAYER).
       BeforeTurnEndEarly (side == Owner.Side): gain block = Amount (Unpowered).
-      AfterTurnEnd (side == ENEMY): decrement by 1 (player) or by player-count (enemy).
+      AfterSideTurnStart (v0.111): an enemy's Plating drops by the player count at its own side's turn start,
+        from round 2 on (so that turn's block is already one lower); the player's drops by 1 at its turn start
+        (turn 2 on), modelled here at AfterTurnEnd (side == ENEMY), the same point between the two turns.
 
     """
 
@@ -102,13 +104,16 @@ class PlatingPower(PowerInstance):
         if side == owner.side:
             _gain_unpowered_block(owner, self.amount, combat)
 
+    def after_side_turn_start(self, owner: Creature, side: CombatSide, combat: CombatState) -> None:
+        if owner.side == CombatSide.ENEMY and side == CombatSide.ENEMY and getattr(combat, "round_number", 1) != 1:
+            self.amount -= len(combat.combat_player_states)
+
     def after_turn_end(self, owner: Creature, side: CombatSide, combat: CombatState) -> None:
-        if side == CombatSide.ENEMY:
+        if side == CombatSide.ENEMY and owner.side != CombatSide.ENEMY:
             if self.skip_next_tick:
                 self.skip_next_tick = False
                 return
-            decrement = len(combat.combat_player_states) if owner.side == CombatSide.ENEMY else 1
-            self.amount -= decrement
+            self.amount -= 1
 
     # Legacy hook kept for backward compat with tick_down_power()
     def on_turn_end_enemy_side(self, owner: Creature) -> None:

@@ -108,7 +108,11 @@ def venerate(card: CardInstance, combat: CombatState, target: Creature | None) -
 
 @register_effect(CardId.ASTRAL_PULSE)
 def astral_pulse(card: CardInstance, combat: CombatState, target: Creature | None) -> None:
-    _deal_damage_all(card, combat)
+    # AstralPulse.cs (v0.111): 6 (8) damage to ALL enemies, WithHitCount(2).
+    for _ in range(2):
+        if _owner(card, combat).is_dead:
+            break
+        _deal_damage_all(card, combat)
 
 
 @register_effect(CardId.BEGONE)
@@ -1027,7 +1031,7 @@ def make_astral_pulse(upgraded: bool = False) -> CardInstance:
     return CardInstance(
         card_id=CardId.ASTRAL_PULSE, cost=0, card_type=CardType.ATTACK,
         target_type=TargetType.ALL_ENEMIES, rarity=CardRarity.COMMON,
-        base_damage=18 if upgraded else 14, upgraded=upgraded,
+        base_damage=8 if upgraded else 6, upgraded=upgraded,
         star_cost=3,
         instance_id=_get_next_id(),
     )

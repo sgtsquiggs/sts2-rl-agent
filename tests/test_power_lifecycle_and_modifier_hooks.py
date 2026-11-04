@@ -1297,7 +1297,14 @@ class TestPowerAmountChangedHooks:
         simple_combat.add_ally_player(PlayerState(player_id=2, character_id="Ironclad", max_hp=70, current_hp=70))
         enemy.apply_power(PowerId.PLATING, 6)
 
+        # PlatingPower.cs (v0.111): an enemy's Plating ticks at its own side's turn start, from round 2 on.
         fire_after_turn_end(CombatSide.ENEMY, simple_combat)
+        assert enemy.get_power_amount(PowerId.PLATING) == 6
+        simple_combat.round_number = 1
+        fire_after_side_turn_start(CombatSide.ENEMY, simple_combat)
+        assert enemy.get_power_amount(PowerId.PLATING) == 6
+        simple_combat.round_number = 2
+        fire_after_side_turn_start(CombatSide.ENEMY, simple_combat)
 
         assert enemy.get_power_amount(PowerId.PLATING) == 4
 

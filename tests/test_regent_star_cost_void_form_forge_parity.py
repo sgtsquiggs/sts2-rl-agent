@@ -26,7 +26,7 @@ def _make_combat() -> CombatState:
 
 class TestRegentStarCostVoidFormForgeParity:
     def test_astral_pulse_requires_stars_then_spends_them_for_aoe(self):
-        """Matches AstralPulse.cs: StarCost 3, then damage all enemies."""
+        """Matches AstralPulse.cs (v0.111): StarCost 3, then 6 damage to all enemies twice."""
         combat = _make_combat()
         enemy_a = combat.enemies[0]
         enemy_b, ai_b = create_shrinker_beetle(Rng(99))
@@ -43,8 +43,8 @@ class TestRegentStarCostVoidFormForgeParity:
         assert combat.can_play_card(card) is True
         assert combat.play_card(0)
         assert combat.stars == 0
-        assert enemy_a.current_hp == 94
-        assert enemy_b.current_hp == 94
+        assert enemy_a.current_hp == 88
+        assert enemy_b.current_hp == 88
 
     def test_guiding_star_spends_star_cost_and_applies_draw_next_turn(self):
         """Matches v0.111 GuidingStar.cs: StarCost 1 and DrawCardsNextTurn."""

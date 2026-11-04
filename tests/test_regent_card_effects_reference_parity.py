@@ -401,7 +401,7 @@ class TestRegentCardEffectsReferenceParity:
 
         assert combat.play_card(0)
         assert blocked.current_hp == 100
-        assert hittable.current_hp == 86
+        assert hittable.current_hp == 88  # AstralPulse.cs (v0.111): 6 x2
 
     def test_resonance_reduces_strength_only_on_hittable_enemies(self):
         combat = _make_combat(extra_enemies=1)
