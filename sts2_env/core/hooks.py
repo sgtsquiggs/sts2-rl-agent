@@ -963,10 +963,24 @@ def fire_after_side_turn_start(side: CombatSide, combat: CombatState) -> None:
 
 
 def fire_before_play_phase_start(player: Creature, combat: CombatState) -> None:
+    # C# Hook.AfterAutoPrePlayPhaseEntered's middle pass (v0.109+; Mayhem, History Course): powers, then relics.
     for owner, power in _iter_power_listeners(combat):
         power.before_play_phase_start(owner, player, combat)
     for owner, relic in _iter_relic_listeners(combat):
         relic.before_play_phase_start(owner, player, combat)
+
+
+def fire_before_play_phase_start_late(player: Creature, combat: CombatState) -> None:
+    # C# AfterAutoPrePlayPhaseEnteredLate (Whispering Earring), after every other auto-pre-play trigger.
+    for owner, relic in _iter_relic_listeners(combat):
+        relic.before_play_phase_start_late(owner, player, combat)
+
+
+def fire_after_auto_post_play(player: Creature, combat: CombatState) -> None:
+    # C# Hook.AfterAutoPostPlayPhaseEntered (v0.109+; Stampede), powers first: the start of the player's turn end,
+    # before BeforeSideTurnEnd. Card listeners (Howl from Beyond, I Am Invincible) follow, from CombatState.
+    for owner, power in _iter_power_listeners(combat):
+        power.after_auto_post_play(owner, player, combat)
 
 
 def fire_after_block_cleared(creature: Creature, combat: CombatState) -> None:

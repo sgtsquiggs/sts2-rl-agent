@@ -446,7 +446,7 @@ def test_whispering_earring_uses_combat_targets_rng_for_ally_targets():
     combat.energy = 0
     combat.rng = SecondChoiceRng()
 
-    combat.relics[0].before_play_phase_start(combat.player, combat.player, combat)
+    combat.relics[0].before_play_phase_start_late(combat.player, combat.player, combat)
 
     assert combat.rng.seen == [first_ally, second_ally]
     assert first_ally.block == 0
@@ -473,7 +473,7 @@ def test_whispering_earring_vakuu_card_selector_auto_resolves_card_choices():
     )
     combat.energy = 1
 
-    combat.relics[0].before_play_phase_start(player, player, combat)
+    combat.relics[0].before_play_phase_start_late(player, player, combat)
 
     assert combat.pending_choice is None
     assert selected_first in combat.exhaust_pile

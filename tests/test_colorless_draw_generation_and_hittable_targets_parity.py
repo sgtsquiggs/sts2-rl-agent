@@ -75,12 +75,14 @@ class TestColorlessDrawGenerationAndHittableTargetsParity:
         assert all(card.card_id != CardId.JACK_OF_ALL_TRADES for card in combat.hand)
         assert len({card.card_id for card in combat.hand}) == 2
 
-    def test_mayhem_autoplays_top_draw_card_at_next_turn_start(self):
+    def test_mayhem_autoplays_top_draw_card_after_the_hand_draw(self):
+        # MayhemPower.cs (v0.109+): AfterAutoPrePlayPhaseEntered, so the hand draw takes the top 5 and Mayhem plays
+        # the 6th (sts2-autoplay R183).
         combat = _make_combat()
-        top_power = make_panache_card()
-        fillers = [make_strike_ironclad() for _ in range(6)]
+        sixth = make_panache_card()
+        fillers = [make_strike_ironclad() for _ in range(5)]
         combat.hand = [make_mayhem_card()]
-        combat.draw_pile = [top_power, *fillers]
+        combat.draw_pile = [*fillers, sixth, make_strike_ironclad()]
         combat.energy = 2
 
         assert combat.play_card(0)
@@ -88,7 +90,8 @@ class TestColorlessDrawGenerationAndHittableTargetsParity:
 
         combat.end_player_turn()
 
-        assert combat.player.get_power_amount(PowerId.PANACHE) == top_power.effect_vars["panache_damage"]
+        assert all(card in combat.hand for card in fillers)
+        assert combat.player.get_power_amount(PowerId.PANACHE) == sixth.effect_vars["panache_damage"]
         assert len(combat.hand) == 5
 
     def test_omnislice_splashes_total_hit_damage_to_other_enemies(self):

@@ -141,7 +141,9 @@ def on_card_drawn(card: CardInstance, combat: CombatState, from_hand_draw: bool)
         card.set_combat_cost(combat.combat_energy_costs_rng.next_int(0, 3))
 
 
-def after_player_turn_start(owner, combat: CombatState) -> None:
+def auto_pre_play(owner, combat: CombatState) -> None:
+    # Imbued.cs (v0.109+): AfterAutoPrePlayPhaseEntered on turn 1, after the hand draw, AfterSideTurnStart and the
+    # orb queue (it was AfterPlayerTurnStart) (sts2-autoplay R183).
     if combat.round_number != 1:
         return
     state = combat.combat_player_state_for(owner)

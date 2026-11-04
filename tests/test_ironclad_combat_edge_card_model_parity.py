@@ -376,6 +376,8 @@ class TestIroncladCombatEdgeCardModelParity:
 
         combat.hand = [strike, defend]
         fire_before_turn_end(CombatSide.PLAYER, combat)
+        assert enemy.current_hp == 100
+        combat._apply_auto_post_play()  # noqa: SLF001
 
         assert strike not in combat.hand
         assert defend in combat.hand
@@ -837,7 +839,7 @@ class TestIroncladCombatEdgeCardModelParity:
         assert combat.player.block == 30
         assert any(card.card_id == CardId.IMPERVIOUS for card in combat.exhaust_pile)
 
-    def test_howl_from_beyond_autoplays_from_exhaust_before_hand_draw(self):
+    def test_howl_from_beyond_autoplays_from_exhaust_at_turn_end(self):
         combat = _make_combat(extra_enemies=1)
         for enemy in combat.enemies:
             enemy.max_hp = 100
@@ -849,9 +851,24 @@ class TestIroncladCombatEdgeCardModelParity:
         combat.exhaust_pile = [card]
 
         combat._apply_card_before_hand_draw(combat.player)  # noqa: SLF001
+        assert [enemy.current_hp for enemy in combat.enemies] == [100, 100]
+        combat._apply_auto_post_play()  # noqa: SLF001
 
         assert [enemy.current_hp for enemy in combat.enemies] == [82, 82]
         assert card in combat.discard_pile
+
+    def test_howl_from_beyond_kills_before_the_enemy_turn(self):
+        combat = _make_combat()
+        enemy = combat.enemies[0]
+        enemy.current_hp = 10
+        card = make_howl_from_beyond()
+        card.owner = combat.player
+        combat.exhaust_pile = [card]
+        hp = combat.player.current_hp
+
+        combat.end_player_turn()
+
+        assert combat.is_over and combat.player.current_hp == hp
 
     def test_stomp_cost_drops_for_owner_attacks_played_this_turn(self):
         combat = _make_combat()

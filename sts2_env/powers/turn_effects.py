@@ -373,7 +373,8 @@ class DuplicationPower(PowerInstance):
 class MayhemPower(PowerInstance):
     """Auto-play Amount card(s) from top of draw pile at start of turn.
 
-    C# hook: BeforeHandDrawLate (player == Owner.Player).
+    C# hook (v0.109+): AfterAutoPrePlayPhaseEntered (player == Owner.Player), i.e. after the hand draw and the
+    turn-start hooks; it was BeforeHandDrawLate before (sts2-autoplay R183).
     """
 
     power_type = PowerType.BUFF
@@ -382,8 +383,8 @@ class MayhemPower(PowerInstance):
     def __init__(self, amount: int):
         super().__init__(PowerId.MAYHEM, amount)
 
-    def before_hand_draw_late(self, owner: Creature, combat: CombatState) -> None:
-        if owner.is_player:
+    def before_play_phase_start(self, owner: Creature, player: Creature, combat: CombatState) -> None:
+        if owner.is_player and player is owner:
             combat.auto_play_from_draw(owner, self.amount)
 
 

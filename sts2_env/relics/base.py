@@ -611,6 +611,9 @@ class RelicInstance:
     def before_play_phase_start(self, owner: Creature, player: Creature, combat: CombatState) -> None:
         pass
 
+    def before_play_phase_start_late(self, owner: Creature, player: Creature, combat: CombatState) -> None:
+        pass
+
     def before_turn_end_very_early(self, owner: Creature, side: CombatSide, combat: CombatState) -> None:
         pass
 

@@ -11,7 +11,7 @@ from sts2_env.cards.registry import (
     register_after_card_exhausted_hook,
     register_after_card_entered_combat_hook,
     register_before_card_played_hook,
-    register_before_hand_draw_hook,
+    register_auto_post_play_hook,
     register_effect,
     register_playability_hook,
     register_self_mutating_damage,
@@ -1146,10 +1146,12 @@ def howl_from_beyond(card: CardInstance, combat: CombatState, target: Creature |
     _deal_damage_all_enemies(card, combat)
 
 
-@register_before_hand_draw_hook(CardId.HOWL_FROM_BEYOND)
-def howl_from_beyond_before_hand_draw(card: CardInstance, drawing_owner: Creature, combat: CombatState) -> None:
-    state = combat.combat_player_state_for(drawing_owner)
-    if getattr(card, "owner", None) is drawing_owner and state is not None and card in state.exhaust:
+@register_auto_post_play_hook(CardId.HOWL_FROM_BEYOND)
+def howl_from_beyond_auto_post_play(card: CardInstance, player: Creature, combat: CombatState) -> None:
+    # HowlFromBeyond.cs (v0.109+): AfterAutoPostPlayPhaseEntered, at the end of its owner's turn before the enemies
+    # act; it was BeforeHandDraw of the next turn (sts2-autoplay R183).
+    state = combat.combat_player_state_for(player)
+    if getattr(card, "owner", None) is player and state is not None and card in state.exhaust:
         combat.auto_play_card(card)
 
 

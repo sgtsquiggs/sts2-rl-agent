@@ -600,7 +600,7 @@ class TestRegentCardEffectsReferenceParity:
         assert enemy.current_hp == 82
         assert card in combat.exhaust_pile
 
-    def test_i_am_invincible_autoplays_from_top_of_draw_pile_after_turn_end(self):
+    def test_i_am_invincible_autoplays_from_top_of_draw_pile_at_turn_end(self):
         combat = _make_combat()
         card = make_i_am_invincible()
         card.owner = combat.player
@@ -609,6 +609,8 @@ class TestRegentCardEffectsReferenceParity:
         combat.draw_pile = [card]
 
         combat._apply_card_after_turn_end(CombatSide.PLAYER)  # noqa: SLF001
+        assert combat.player.block == 0
+        combat._apply_auto_post_play()  # noqa: SLF001
 
         assert combat.player.block == 10
         assert card in combat.discard_pile

@@ -2284,15 +2284,19 @@ class HandDrill(RelicInstance):
 
 @register_relic
 class HistoryCourse(RelicInstance):
-    """After round 1, auto-play last Attack/Skill from previous turn."""
+    """After round 1, auto-play a dupe of the last Attack played the previous turn.
+
+    C# (v0.109+): AfterAutoPrePlayPhaseEntered, after the hand draw and the turn-start hooks (it was
+    AfterPlayerTurnStartEarly), and only an Attack (it was an Attack or a Skill) (sts2-autoplay R183).
+    """
     relic_id = RelicId.HISTORY_COURSE
     rarity = RelicRarity.EVENT
     pool = RelicPool.EVENT
 
-    def after_player_turn_start_early(self, owner: Creature, combat: CombatState) -> None:
-        if combat.round_number <= 1:
+    def before_play_phase_start(self, owner: Creature, player: Creature, combat: CombatState) -> None:
+        if player is not owner or combat.round_number <= 1:
             return
-        pending = combat.last_finished_attack_or_skill_from_previous_round(owner)
+        pending = combat.last_finished_attack_from_previous_round(owner)
         if pending is None:
             return
         replay = pending.create_dupe(new_card_instance_id())
@@ -3943,7 +3947,8 @@ class WhisperingEarring(RelicInstance):
                 return False
         return True
 
-    def before_play_phase_start(self, owner: Creature, player: Creature, combat: CombatState) -> None:
+    def before_play_phase_start_late(self, owner: Creature, player: Creature, combat: CombatState) -> None:
+        # C# AfterAutoPrePlayPhaseEnteredLate: after every other auto-pre-play trigger (Imbued).
         if player is not owner or combat.round_number > 1:
             return
         state = combat.combat_player_state_for(owner)

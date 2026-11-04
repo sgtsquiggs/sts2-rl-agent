@@ -20,7 +20,7 @@ from sts2_env.cards.base import (
 )
 from sts2_env.cards.enchantments import (
     after_card_played as apply_enchantment_after_card_played,
-    after_player_turn_start as apply_enchantment_after_player_turn_start,
+    auto_pre_play as apply_enchantment_auto_pre_play,
     before_flush as apply_enchantment_before_flush,
     enchant_play_count_bonus,
     modify_shuffle_order as apply_enchantment_shuffle_order,
@@ -42,6 +42,7 @@ from sts2_env.cards.registry import (
     fire_card_after_card_played,
     fire_card_after_turn_end,
     fire_card_auto_pre_play_early,
+    fire_card_auto_post_play,
     fire_card_before_card_played,
     fire_card_before_hand_draw,
     fire_card_late_effects,
@@ -869,6 +870,7 @@ class CombatState:
             fire_after_player_turn_start,
             fire_after_side_turn_start,
             fire_before_play_phase_start,
+            fire_before_play_phase_start_late,
             fire_before_hand_draw,
             fire_before_hand_draw_late,
             modify_hand_draw,
@@ -939,9 +941,6 @@ class CombatState:
                         return
                     stage = "post_after_player_turn_start"
 
-                if stage == "post_after_player_turn_start":
-                    apply_enchantment_after_player_turn_start(owner, self)
-
             player_index += 1
             stage = "block"
 
@@ -956,11 +955,21 @@ class CombatState:
                 if self.pending_choice is not None or self.is_over:
                     return
         for state in self.combat_player_states:
-            # C# RunAutoPrePlayPhase: the Early hooks (Bombardment) fire before the others.
+            # C# RunAutoPrePlayPhase -> Hook.AfterAutoPrePlayPhaseEntered (v0.109+), after the hand draw, the
+            # AfterPlayerTurnStart hooks, AfterSideTurnStart and the orb queue: the Early pass (Bombardment), the
+            # normal pass (powers: Mayhem; relics: History Course; then cards: Imbued), the Late pass (Whispering
+            # Earring) (sts2-autoplay R182b, R183).
             self._apply_card_auto_pre_play_early(state.creature)
             if self.pending_choice is not None or self.is_over:
                 return
             fire_before_play_phase_start(state.creature, self)
+            if self.pending_choice is not None or self.is_over:
+                return
+            with self.acting_player_view(state.creature):
+                apply_enchantment_auto_pre_play(state.creature, self)
+            if self.pending_choice is not None or self.is_over:
+                return
+            fire_before_play_phase_start_late(state.creature, self)
             if self.pending_choice is not None or self.is_over:
                 return
         self._check_combat_end()
@@ -1001,6 +1010,22 @@ class CombatState:
                 fire_card_auto_pre_play_early(card, owner, self)
                 if self.is_over or self.pending_choice is not None:
                     return
+
+    def _apply_auto_post_play(self) -> None:
+        """C# EndPlayerTurnPhaseOneInternal -> Hook.AfterAutoPostPlayPhaseEntered (v0.109+), before BeforeSideTurnEnd:
+        powers (Stampede), then cards (Howl from Beyond, I Am Invincible) (sts2-autoplay R183)."""
+        from sts2_env.core.hooks import fire_after_auto_post_play
+
+        for state in self.combat_player_states:
+            owner = state.creature
+            with self.acting_player_view(owner):
+                fire_after_auto_post_play(owner, self)
+                if self.is_over:
+                    return
+                for card in self.unique_cards_in_piles(state.all_piles):
+                    fire_card_auto_post_play(card, owner, self)
+                    if self.is_over:
+                        return
 
     def _apply_card_after_turn_end(self, side: CombatSide) -> None:
         for state in self.combat_player_states:
@@ -1535,6 +1560,11 @@ class CombatState:
         """End player turn, execute enemy turn, then start the next player turn."""
         from sts2_env.core.hooks import fire_after_turn_end, fire_before_turn_end
 
+        if self.is_over:
+            return
+
+        self._apply_auto_post_play()
+        self._check_combat_end()
         if self.is_over:
             return
 
@@ -3334,14 +3364,15 @@ class CombatState:
             for _, logged_target, _, unblocked in current_turn_events
         )
 
-    def last_finished_attack_or_skill_from_previous_round(self, owner: Creature) -> CardInstance | None:
+    def last_finished_attack_from_previous_round(self, owner: Creature) -> CardInstance | None:
+        # HistoryCourse.cs (v0.109+): the last non-dupe Attack (no longer Attack or Skill) finished last turn.
         for entry in reversed(self._card_play_finished_entries_combat):
             card = entry.card
             if entry.round_number != self.round_number - 1:
                 continue
             if getattr(card, "owner", None) is not owner:
                 continue
-            if card.card_type not in {CardType.ATTACK, CardType.SKILL}:
+            if card.card_type != CardType.ATTACK:
                 continue
             if bool(card.combat_vars.get("_is_dupe")):
                 continue

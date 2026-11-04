@@ -223,6 +223,9 @@ class PowerInstance:
     def before_play_phase_start(self, owner: Creature, player: Creature, combat: CombatState) -> None:
         pass
 
+    def after_auto_post_play(self, owner: Creature, player: Creature, combat: CombatState) -> None:
+        pass
+
     def before_turn_end_very_early(self, owner: Creature, side: CombatSide, combat: CombatState) -> None:
         pass
 

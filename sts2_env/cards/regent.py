@@ -10,7 +10,7 @@ from sts2_env.cards.base import CardInstance, _get_next_id, new_card_instance_id
 from sts2_env.cards.factory import create_cards_from_ids, eligible_registered_cards
 from sts2_env.cards.registry import (
     register_after_card_drawn_hook,
-    register_after_turn_end_hook,
+    register_auto_post_play_hook,
     register_auto_pre_play_early_hook,
     register_effect,
     register_late_effect,
@@ -873,11 +873,12 @@ def i_am_invincible(card: CardInstance, combat: CombatState, target: Creature | 
     _gain_block(card, combat)
 
 
-@register_after_turn_end_hook(CardId.I_AM_INVINCIBLE)
-def i_am_invincible_after_turn_end(card: CardInstance, side: CombatSide, combat: CombatState) -> None:
-    owner = getattr(card, "owner", None)
-    if owner is not None and side == owner.side:
-        state = combat.combat_player_state_for(owner)
+@register_auto_post_play_hook(CardId.I_AM_INVINCIBLE)
+def i_am_invincible_auto_post_play(card: CardInstance, player: Creature, combat: CombatState) -> None:
+    # IAmInvincible.cs (v0.109+): AfterAutoPostPlayPhaseEntered, before BeforeSideTurnEnd and the hand flush; it was
+    # AfterTurnEnd (sts2-autoplay R183).
+    if getattr(card, "owner", None) is player:
+        state = combat.combat_player_state_for(player)
         if state is not None and state.draw and state.draw[0] is card:
             combat.auto_play_card(card, force_exhaust=False)
 

@@ -164,7 +164,9 @@ class TestRelicRareShopReplayAndTurnTimingParity:
 
         assert combat.rng.counter == counter
 
-    def test_history_course_replays_last_card_played_after_player_turn_end(self):
+    def test_history_course_replays_last_attack_not_a_later_turn_end_skill(self):
+        # HistoryCourse.cs (v0.109+) replays only an Attack: I Am Invincible auto-plays at the end of turn 1 (after
+        # the Strike), and the Strike is what replays at the next turn's auto-pre-play phase.
         combat = _make_ironclad_combat(["HistoryCourse"])
         enemy = combat.enemies[0]
         starting_hp = enemy.current_hp
@@ -178,10 +180,10 @@ class TestRelicRareShopReplayAndTurnTimingParity:
 
         combat.end_player_turn()
 
-        assert enemy.current_hp == starting_hp - 6
-        assert combat.player.block >= top_draw_skill.base_block
+        assert enemy.current_hp == starting_hp - 10
+        assert combat.count_cards_played_this_combat(combat.player) == 3
 
-    def test_history_course_can_replay_non_dupe_clones(self):
+    def test_history_course_does_not_replay_a_skill(self):
         combat = _make_ironclad_combat(["HistoryCourse"])
         player = combat.player
         clone = make_deflect().clone(123)
@@ -193,8 +195,22 @@ class TestRelicRareShopReplayAndTurnTimingParity:
 
         combat.end_player_turn()
 
+        assert combat.count_cards_played_this_combat(player) == 1
+        assert player.block == 0
+
+    def test_history_course_can_replay_non_dupe_clones(self):
+        combat = _make_ironclad_combat(["HistoryCourse"])
+        player = combat.player
+        clone = make_strike_ironclad().clone(123)
+        clone.owner = player
+        combat.hand = [clone]
+        combat.energy = 1
+
+        assert combat.play_card(0, 0)
+
+        combat.end_player_turn()
+
         assert combat.count_cards_played_this_combat(player) == 2
-        assert player.block == clone.base_block
 
     def test_history_course_replay_dupe_does_not_enter_discard(self):
         combat = _make_ironclad_combat(["HistoryCourse"])

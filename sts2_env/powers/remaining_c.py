@@ -1002,8 +1002,8 @@ class StampedePower(PowerInstance):
     """Before turn ends, auto-play Amount random playable Attack(s) from hand.
 
     C# ref: StampedePower.cs
-    - BeforeTurnEnd (owner side): pick Amount random playable Attacks from
-      hand and auto-play them.
+    - AfterAutoPostPlayPhaseEntered (v0.109+; player == Owner.Player): pick Amount random playable Attacks from
+      hand and auto-play them, before BeforeSideTurnEnd (it was BeforeTurnEnd; sts2-autoplay R183).
     StackType.Counter.
     """
 
@@ -1013,8 +1013,8 @@ class StampedePower(PowerInstance):
     def __init__(self, amount: int):
         super().__init__(PowerId.STAMPEDE, amount)
 
-    def before_turn_end(self, owner: Creature, side: CombatSide, combat: CombatState) -> None:
-        if side != owner.side:
+    def after_auto_post_play(self, owner: Creature, player: Creature, combat: CombatState) -> None:
+        if player is not owner:
             return
         auto_play = getattr(combat, "auto_play_random_attack_from_hand", None)
         if auto_play is not None:

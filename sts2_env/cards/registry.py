@@ -127,6 +127,9 @@ _CARD_BEFORE_HAND_DRAW_HOOKS: dict[CardId, CardBeforeHandDrawHook] = {}
 # C# AbstractModel.AfterAutoPrePlayPhaseEnteredEarly (v0.111: CombatManager.RunAutoPrePlayPhase, after the hand draw,
 # AfterPlayerTurnStart, AfterSideTurnStart and the orb queue's turn start). Same signature as before_hand_draw.
 _CARD_AUTO_PRE_PLAY_EARLY_HOOKS: dict[CardId, CardBeforeHandDrawHook] = {}
+# C# AbstractModel.AfterAutoPostPlayPhaseEntered (v0.109+: CombatManager.EndPlayerTurnPhaseOneInternal, the start of
+# the player's turn end, before BeforeSideTurnEnd and the hand flush). Same signature as before_hand_draw.
+_CARD_AUTO_POST_PLAY_HOOKS: dict[CardId, CardBeforeHandDrawHook] = {}
 _CARD_AFTER_TURN_END_HOOKS: dict[CardId, CardAfterTurnEndHook] = {}
 _CARD_AFTER_CARD_DRAWN_HOOKS: dict[CardId, CardAfterCardDrawnHook] = {}
 _CARD_TURN_END_IN_HAND_HOOKS: dict[CardId, CardTurnEndInHandHook] = {}
@@ -258,6 +261,13 @@ def register_before_hand_draw_hook(card_id: CardId):
 def register_auto_pre_play_early_hook(card_id: CardId):
     def decorator(func: CardBeforeHandDrawHook) -> CardBeforeHandDrawHook:
         _CARD_AUTO_PRE_PLAY_EARLY_HOOKS[card_id] = func
+        return func
+    return decorator
+
+
+def register_auto_post_play_hook(card_id: CardId):
+    def decorator(func: CardBeforeHandDrawHook) -> CardBeforeHandDrawHook:
+        _CARD_AUTO_POST_PLAY_HOOKS[card_id] = func
         return func
     return decorator
 
@@ -529,6 +539,16 @@ def fire_card_auto_pre_play_early(
     combat: "CombatState",
 ) -> None:
     hook = _CARD_AUTO_PRE_PLAY_EARLY_HOOKS.get(card.card_id)
+    if hook is not None:
+        hook(card, player, combat)
+
+
+def fire_card_auto_post_play(
+    card: "CardInstance",
+    player: "Creature",
+    combat: "CombatState",
+) -> None:
+    hook = _CARD_AUTO_POST_PLAY_HOOKS.get(card.card_id)
     if hook is not None:
         hook(card, player, combat)
 
