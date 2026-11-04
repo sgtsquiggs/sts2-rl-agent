@@ -581,7 +581,7 @@ class TestRegentCardEffectsReferenceParity:
         assert combat.draw_pile[0] is existing_top
         assert card not in combat.draw_pile
 
-    def test_bombardment_autoplays_from_exhaust_before_hand_draw_and_stays_exhausted(self):
+    def test_bombardment_autoplays_from_exhaust_in_auto_pre_play_and_stays_exhausted(self):
         combat = _make_combat()
         enemy = combat.enemies[0]
         enemy.max_hp = 100
@@ -593,6 +593,9 @@ class TestRegentCardEffectsReferenceParity:
         combat.exhaust_pile = [card]
 
         combat._apply_card_before_hand_draw(combat.player)  # noqa: SLF001
+        assert enemy.current_hp == 100  # v0.111: not before the hand draw (sts2-autoplay R182b)
+
+        combat._apply_card_auto_pre_play_early(combat.player)  # noqa: SLF001
 
         assert enemy.current_hp == 82
         assert card in combat.exhaust_pile

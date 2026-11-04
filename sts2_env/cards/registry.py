@@ -124,6 +124,9 @@ _CARD_AFTER_MAP_GENERATED_HOOKS: dict[CardId, CardAfterMapGeneratedHook] = {}
 _CARD_QUEST_COMPLETE_HOOKS: dict[CardId, CardQuestCompleteHook] = {}
 _CARD_REST_SITE_OPTIONS_HOOKS: dict[CardId, CardRestSiteOptionsHook] = {}
 _CARD_BEFORE_HAND_DRAW_HOOKS: dict[CardId, CardBeforeHandDrawHook] = {}
+# C# AbstractModel.AfterAutoPrePlayPhaseEnteredEarly (v0.111: CombatManager.RunAutoPrePlayPhase, after the hand draw,
+# AfterPlayerTurnStart, AfterSideTurnStart and the orb queue's turn start). Same signature as before_hand_draw.
+_CARD_AUTO_PRE_PLAY_EARLY_HOOKS: dict[CardId, CardBeforeHandDrawHook] = {}
 _CARD_AFTER_TURN_END_HOOKS: dict[CardId, CardAfterTurnEndHook] = {}
 _CARD_AFTER_CARD_DRAWN_HOOKS: dict[CardId, CardAfterCardDrawnHook] = {}
 _CARD_TURN_END_IN_HAND_HOOKS: dict[CardId, CardTurnEndInHandHook] = {}
@@ -248,6 +251,13 @@ def register_rest_site_options_hook(card_id: CardId):
 def register_before_hand_draw_hook(card_id: CardId):
     def decorator(func: CardBeforeHandDrawHook) -> CardBeforeHandDrawHook:
         _CARD_BEFORE_HAND_DRAW_HOOKS[card_id] = func
+        return func
+    return decorator
+
+
+def register_auto_pre_play_early_hook(card_id: CardId):
+    def decorator(func: CardBeforeHandDrawHook) -> CardBeforeHandDrawHook:
+        _CARD_AUTO_PRE_PLAY_EARLY_HOOKS[card_id] = func
         return func
     return decorator
 
@@ -511,6 +521,16 @@ def fire_card_before_hand_draw(
     hook = _CARD_BEFORE_HAND_DRAW_HOOKS.get(card.card_id)
     if hook is not None:
         hook(card, drawing_owner, combat)
+
+
+def fire_card_auto_pre_play_early(
+    card: "CardInstance",
+    player: "Creature",
+    combat: "CombatState",
+) -> None:
+    hook = _CARD_AUTO_PRE_PLAY_EARLY_HOOKS.get(card.card_id)
+    if hook is not None:
+        hook(card, player, combat)
 
 
 def fire_card_after_turn_end(

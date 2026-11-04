@@ -11,7 +11,7 @@ from sts2_env.cards.factory import create_cards_from_ids, eligible_registered_ca
 from sts2_env.cards.registry import (
     register_after_card_drawn_hook,
     register_after_turn_end_hook,
-    register_before_hand_draw_hook,
+    register_auto_pre_play_early_hook,
     register_effect,
     register_late_effect,
     register_self_mutating_damage,
@@ -709,10 +709,12 @@ def bombardment(card: CardInstance, combat: CombatState, target: Creature | None
     _deal_damage_single(card, combat, target)
 
 
-@register_before_hand_draw_hook(CardId.BOMBARDMENT)
-def bombardment_before_hand_draw(card: CardInstance, drawing_owner: Creature, combat: CombatState) -> None:
-    state = combat.combat_player_state_for(drawing_owner)
-    if getattr(card, "owner", None) is drawing_owner and state is not None and card in state.exhaust:
+@register_auto_pre_play_early_hook(CardId.BOMBARDMENT)
+def bombardment_auto_pre_play(card: CardInstance, player: Creature, combat: CombatState) -> None:
+    # Bombardment.cs AfterAutoPrePlayPhaseEnteredEarly (v0.111): after the hand draw and the turn-start hooks, not
+    # before the draw (sts2-autoplay R182b).
+    state = combat.combat_player_state_for(player)
+    if getattr(card, "owner", None) is player and state is not None and card in state.exhaust:
         combat.auto_play_card(card)
 
 

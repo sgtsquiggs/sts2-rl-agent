@@ -41,6 +41,7 @@ from sts2_env.cards.registry import (
     fire_card_after_card_entered_combat,
     fire_card_after_card_played,
     fire_card_after_turn_end,
+    fire_card_auto_pre_play_early,
     fire_card_before_card_played,
     fire_card_before_hand_draw,
     fire_card_late_effects,
@@ -955,6 +956,10 @@ class CombatState:
                 if self.pending_choice is not None or self.is_over:
                     return
         for state in self.combat_player_states:
+            # C# RunAutoPrePlayPhase: the Early hooks (Bombardment) fire before the others.
+            self._apply_card_auto_pre_play_early(state.creature)
+            if self.pending_choice is not None or self.is_over:
+                return
             fire_before_play_phase_start(state.creature, self)
             if self.pending_choice is not None or self.is_over:
                 return
@@ -986,6 +991,16 @@ class CombatState:
             fire_card_before_hand_draw(card, owner, self)
             if self.is_over:
                 return
+
+    def _apply_card_auto_pre_play_early(self, owner: Creature) -> None:
+        state = self.combat_player_state_for(owner)
+        if state is None:
+            return
+        with self.acting_player_view(owner):
+            for card in self.unique_cards_in_piles(state.all_piles):
+                fire_card_auto_pre_play_early(card, owner, self)
+                if self.is_over or self.pending_choice is not None:
+                    return
 
     def _apply_card_after_turn_end(self, side: CombatSide) -> None:
         for state in self.combat_player_states:
