@@ -744,10 +744,8 @@ def create_fabricator(rng: Rng, ascension_level: int = 0) -> tuple[Creature, Mon
         combat = creature.combat_state
         if combat is None:
             return True
-        alive_teammates = [
-            enemy for enemy in combat.alive_enemies
-            if enemy is not creature and enemy.side == creature.side
-        ]
+        # C# CanFabricate: GetTeammatesOf(Creature).Count(IsAlive) < 4, the Fabricator itself included.
+        alive_teammates = [enemy for enemy in combat.alive_enemies if enemy.side == creature.side]
         return len(alive_teammates) < FABRICATOR_MAX_LIVING_TEAMMATES_FOR_FABRICATE
 
     fabricating_strike_intent_damage = _ascension_value(

@@ -1389,10 +1389,9 @@ def create_ovicopter(rng: Rng, ascension_level: int = 0) -> tuple[Creature, Mons
     def can_lay(combat: CombatState | None) -> bool:
         if combat is None:
             return True
-        return (
-            sum(1 for teammate in combat.get_teammates_of(creature) if teammate.is_alive)
-            <= OVICOPTER_MAX_LIVING_TEAMMATES_FOR_LAY
-        )
+        # C# CanLay: GetTeammatesOf(Creature).Count(IsAlive) <= 3. GetTeammatesOf is the whole side, the Ovicopter
+        # itself included (get_teammates_of here leaves the owner out).
+        return len(combat.alive_enemies) <= OVICOPTER_MAX_LIVING_TEAMMATES_FOR_LAY
 
     def lay_eggs(combat: CombatState) -> None:
         for _ in range(OVICOPTER_EGGS_TO_LAY):
@@ -1689,7 +1688,8 @@ def create_the_obscura(rng: Rng, ascension_level: int = 0) -> tuple[Creature, Mo
         _deal_damage_to_player(combat, creature, gaze_dmg)
 
     def sail(combat: CombatState) -> None:
-        for teammate in combat.get_teammates_of(creature):
+        # C# WailMove: Strength to GetTeammatesOf(Creature), the whole side, the Obscura itself included.
+        for teammate in combat.alive_enemies:
             if teammate.is_alive:
                 teammate.apply_power(PowerId.STRENGTH, THE_OBSCURA_SAIL_STRENGTH)
 

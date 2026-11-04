@@ -3191,7 +3191,9 @@ class TestFixedRotation:
             TOUGH_EGG_PLAYER_SIDE_HATCH
         ] * OVICOPTER_EGGS_TO_LAY
 
-        expected_moves = ["SMASH_MOVE", "TENDERIZER_MOVE", "LAY_EGGS_MOVE"]
+        # C# CanLay counts GetTeammatesOf(Creature) alive, the Ovicopter itself included: with 3 eggs up (4 alive)
+        # it pastes instead of laying (the game: 31 of 31 logged turns).
+        expected_moves = ["SMASH_MOVE", "TENDERIZER_MOVE", "NUTRITIONAL_PASTE_MOVE"]
         actual_moves = []
         for _ in expected_moves:
             ovicopter_ai.on_move_performed()
@@ -3199,9 +3201,8 @@ class TestFixedRotation:
             actual_moves.append(ovicopter_ai.current_move.state_id)
         assert actual_moves == expected_moves
 
-        ovicopter_ai.current_move.perform(combat)
-        assert len([enemy for enemy in combat.enemies if enemy.monster_id == TOUGH_EGG_MONSTER_ID]) == 6
-
+        # One egg down: 3 alive, the Ovicopter included, so it lays again.
+        combat.enemies[1].current_hp = 0
         ovicopter_ai.on_move_performed()
         ovicopter_ai.roll_move(Rng(36))
         assert ovicopter_ai.current_move.state_id == "SMASH_MOVE"
@@ -3210,7 +3211,7 @@ class TestFixedRotation:
         assert ovicopter_ai.current_move.state_id == "TENDERIZER_MOVE"
         ovicopter_ai.on_move_performed()
         ovicopter_ai.roll_move(Rng(36))
-        assert ovicopter_ai.current_move.state_id == "NUTRITIONAL_PASTE_MOVE"
+        assert ovicopter_ai.current_move.state_id == "LAY_EGGS_MOVE"
 
     def test_act2_normal_back_half_ascension_scaling_matches_csharp(self):
         rng_seed = 1286
@@ -3322,13 +3323,14 @@ class TestFixedRotation:
         assert obscura_combat.player.current_hp == player_hp_before_gaze - THE_OBSCURA_PIERCING_GAZE_DAMAGE_A9
         obscura_ai.states[THE_OBSCURA_SAIL_MOVE].perform(obscura_combat)
         assert obscura_teammate.get_power_amount(PowerId.STRENGTH) == THE_OBSCURA_SAIL_STRENGTH
-        assert obscura.get_power_amount(PowerId.STRENGTH) == 0
+        # C# WailMove buffs GetTeammatesOf(Creature): the Obscura itself too.
+        assert obscura.get_power_amount(PowerId.STRENGTH) == THE_OBSCURA_SAIL_STRENGTH
         hardening = obscura_ai.states[THE_OBSCURA_HARDENING_STRIKE_MOVE]
         assert hardening.intents[0].damage == THE_OBSCURA_HARDENING_STRIKE_DAMAGE_A9
         player_hp_before_hardening = obscura_combat.player.current_hp
         hardening.perform(obscura_combat)
         assert obscura_combat.player.current_hp == (
-            player_hp_before_hardening - THE_OBSCURA_HARDENING_STRIKE_DAMAGE_A9
+            player_hp_before_hardening - THE_OBSCURA_HARDENING_STRIKE_DAMAGE_A9 - THE_OBSCURA_SAIL_STRENGTH
         )
         assert obscura.block == THE_OBSCURA_HARDENING_STRIKE_BLOCK_A9
 
@@ -3526,9 +3528,11 @@ class TestFixedRotation:
         obscura_ai.states["SAIL_MOVE"].perform(combat)
         assert summoned.get_power_amount(PowerId.STRENGTH) == 3
 
+        assert obscura.get_power_amount(PowerId.STRENGTH) == 3  # C# WailMove: the Obscura buffs itself too
+
         obscura_ai.states["HARDENING_STRIKE_MOVE"].perform(combat)
         assert obscura.block == 6
-        assert combat.player.current_hp == 74
+        assert combat.player.current_hp == 71  # 6 + 3 Strength
 
     def test_act2_obscura_summoned_parafright_uses_combat_ascension(self):
         combat = _make_combat(1284)
