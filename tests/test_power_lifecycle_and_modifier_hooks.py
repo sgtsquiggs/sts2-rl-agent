@@ -767,6 +767,21 @@ class TestDamageModifierInteractions:
         assert calculate_damage(10, player, enemy, ValueProp.MOVE, simple_combat) == 30
         assert calculate_damage(10, ally, enemy, ValueProp.MOVE, simple_combat) == 20
 
+    def test_knockdown_loaded_falls_back_to_power_applier(self, simple_combat):
+        # sts2-autoplay R182a: build() loads a KNOCKDOWN as [(amount, None)] and sets only power.applier; the
+        # applier's own hits must stay unmultiplied (KnockdownPower.cs: dealer == Applier -> 1).
+        from sts2_env.powers.remaining_b import KnockdownPower
+
+        player = simple_combat.player
+        ally = simple_combat.add_ally_player(PlayerState(player_id=2, character_id="Ironclad", max_hp=70, current_hp=70))
+        enemy = simple_combat.enemies[0]
+        power = KnockdownPower(2)
+        enemy.powers[PowerId.KNOCKDOWN] = power
+        power.applier = player
+
+        assert calculate_damage(10, player, enemy, ValueProp.MOVE, simple_combat) == 10
+        assert calculate_damage(10, ally, enemy, ValueProp.MOVE, simple_combat) == 20
+
     def test_guarded_keeps_separate_appliers_like_reference(self, simple_combat):
         player = simple_combat.player
         ally = simple_combat.add_ally_player(PlayerState(player_id=2, character_id="Ironclad", max_hp=70, current_hp=70))

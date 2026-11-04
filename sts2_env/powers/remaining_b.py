@@ -777,7 +777,9 @@ class KnockdownPower(PowerInstance):
             return 1.0
         multiplier = 1.0
         for amount, applier in self._instances:
-            if dealer is applier:
+            # A loaded power (build(): `_instances == [(amount, None)]`, only `self.applier` set) falls back to the
+            # power's applier, as Flanking and Tag Team do; the game's instance always knows its applier.
+            if dealer is (applier or self.applier):
                 continue
             multiplier *= float(amount)
         return multiplier
